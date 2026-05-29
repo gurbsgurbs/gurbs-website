@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steam Revenue Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --bg2: #141416;
+    --bg3: #1a1a1e;
+    --border: rgba(255,255,255,0.07);
+    --border-hi: rgba(255,255,255,0.14);
+    --text: #f0efe8;
+    --muted: #b0aea6;
+    --dim: #7a7870;
+    --accent: #c8f04a;
+    --accent-dim: rgba(200,240,74,0.12);
+    --blue: #a78bfa;
+    --blue-dim: rgba(167,139,250,0.12);
+    --green: #fbbf24;
+    --green-dim: rgba(251,191,36,0.12);
+    --red: #f06060;
+    --mono: 'Roboto Mono', monospace;
+    --display: 'Roboto', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 14px; line-height: 1.6; }
+
+  body { min-height: 100vh; padding: 0; }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 32px;
+  }
+
+  .header-tag {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 480px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .regions-grid { grid-template-columns: 1fr !important; }
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+  }
+
+  .panel-full { grid-column: 1 / -1; }
+
+  .panel-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 16px;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .field-row:last-child { margin-bottom: 0; }
+
+  .field-row label {
+    flex: 1;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .field-row input[type=number] {
+    background: var(--bg3);
+    border: 0.5px solid var(--border-hi);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 7px 10px;
+    width: 90px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field-row input[type=number]:focus {
+    border-color: var(--accent);
+  }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .range-row:last-child { margin-bottom: 0; }
+
+  .range-row label { width: 130px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+  .range-row input[type=range] {
+    flex: 1;
+    appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--bg3);
+    outline: none;
+    cursor: pointer;
+    --pct: 30%;
+    background: linear-gradient(to right, var(--accent) var(--pct), var(--bg3) var(--pct));
+  }
+
+  .range-row input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    cursor: pointer;
+  }
+
+  .range-row input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    cursor: pointer;
+  }
+
+  .range-val {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    width: 42px;
+    text-align: right;
+  }
+
+  .split-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg3);
+    display: flex;
+    overflow: hidden;
+    margin: 14px 0 8px;
+  }
+
+  .split-seg { height: 100%; transition: width 0.2s ease; }
+
+  .split-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .split-legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+  }
+
+  .warn {
+    font-size: 11px;
+    color: var(--red);
+    margin-top: 6px;
+  }
+
+  .metrics {
+    margin-bottom: 16px;
+  }
+
+  .metric {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+  }
+
+  .metric.accent-border { border-color: rgba(200,240,74,0.3); }
+  .metric.blue-border { border-color: rgba(91,156,246,0.3); }
+  .metric.green-border { border-color: rgba(78,207,160,0.3); }
+
+  .metric-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+
+  .metric-val {
+    font-family: var(--display);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .metric-val.accent { color: var(--accent); }
+  .metric-val.blue { color: var(--blue); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.muted { color: var(--muted); }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 3px;
+  }
+
+  .regions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 32px;
+  }
+
+  .region-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .region-row:last-child { border-bottom: none; }
+
+  .region-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .region-pct {
+    font-size: 10px;
+    color: var(--dim);
+    width: 32px;
+    text-align: right;
+  }
+
+  .region-row input[type=number] {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 8px;
+    width: 72px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .region-row input[type=number]:focus { border-color: var(--accent); }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 500;
+    padding: 0 8px 10px 0;
+    border-bottom: 0.5px solid var(--border-hi);
+  }
+
+  thead th:not(:first-child) { text-align: right; }
+
+  tbody td {
+    padding: 8px 8px 8px 0;
+    border-bottom: 0.5px solid var(--border);
+    color: var(--text);
+  }
+
+  tbody td:not(:first-child) { text-align: right; }
+
+  tbody td.muted { color: var(--muted); }
+
+  tfoot td {
+    padding: 10px 8px 0 0;
+    border-top: 0.5px solid var(--border-hi);
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  tfoot td:not(:first-child) { text-align: right; }
+  tfoot td.accent { color: var(--accent); }
+  tfoot td.muted { color: var(--muted); }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 0.5px solid var(--border);
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  /* number input arrow hide */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  footer a:hover { color: var(--text) !important; }
+
+  .fade-in { animation: fadeIn 0.4s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="page fade-in">
+
+  <header>
+<h1>Steam <span>Revenue</span><br>Calculator</h1>
+    <p class="subtitle">Estimate global earnings with regional PPP pricing, Steam's cut, and custom revenue splits between IP holders / publishers and dev studios.</p>
+  </header>
+
+  <!-- Summary metrics -->
+  <div class="metrics" id="metrics" style="margin-bottom:16px;"></div>
+
+  <!-- Config row -->
+  <div class="grid" style="margin-bottom:16px;">
+
+    <!-- Base price + Steam cut -->
+    <div class="panel">
+      <div class="panel-label">Pricing &amp; platform</div>
+      <div class="field-row">
+        <label>Base price (USD / EUR)</label>
+        <input type="number" id="basePrice" value="10" min="0.5" max="200" step="0.5" oninput="calc()">
+      </div>
+      <div class="range-row" style="margin-top:14px;">
+        <label>Steam cut</label>
+        <input type="range" id="steamCut" min="20" max="30" value="30" step="5" oninput="calc()">
+        <span class="range-val" id="steamCutVal">30%</span>
+      </div>
+      <p style="font-size:11px;color:var(--dim);margin-top:8px;">30% standard · 25% above $10M · 20% above $50M</p>
+    </div>
+
+    <!-- Revenue splits -->
+    <div class="panel">
+      <div class="panel-label">Revenue splits (of dev net)</div>
+      <div class="range-row">
+        <label>IP / Publisher</label>
+        <input type="range" id="ipSplit" min="0" max="100" value="20" step="1" oninput="syncSplits('ip')">
+        <span class="range-val" id="ipVal">20%</span>
+      </div>
+      <div class="range-row">
+        <label>Dev studio</label>
+        <input type="range" id="devSplit" min="0" max="100" value="80" step="1" oninput="syncSplits('dev')">
+        <span class="range-val" id="devVal">80%</span>
+      </div>
+      <div id="splitWarn" class="warn" style="display:none;">⚠ Splits must sum to 100%</div>
+      <div class="split-bar">
+        <div class="split-seg" id="barIp" style="background:var(--blue);width:20%;"></div>
+        <div class="split-seg" id="barDev" style="background:var(--green);width:80%;"></div>
+      </div>
+      <div class="split-legend">
+        <span><span class="dot" style="background:var(--blue);"></span>IP / Publisher</span>
+        <span><span class="dot" style="background:var(--green);"></span>Dev studio</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tax panel -->
+  <div class="panel panel-full" style="margin-bottom:16px;">
+    <div class="panel-label">Corporate tax — company jurisdiction</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;">
+      <div>
+        <div style="margin-bottom:10px;position:relative;" id="taxDropdownWrap">
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Country of incorporation</label>
+          <div id="taxSelected" onclick="toggleTaxDropdown()" style="background:var(--bg3);border:0.5px solid var(--border-hi);border-radius:var(--radius);color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+            <span id="taxSelectedLabel">— Select country —</span>
+            <span id="taxChevron" style="font-size:10px;color:var(--dim);transition:transform 0.2s;">▼</span>
+          </div>
+          <div id="taxDropdown" style="display:none;position:absolute;z-index:100;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:0.5px solid var(--border-hi);border-radius:var(--radius);overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+            <div style="padding:8px;">
+              <input id="taxSearch" type="text" placeholder="Search country…" oninput="filterTax()" autocomplete="off"
+                style="width:100%;background:var(--bg3);border:0.5px solid var(--border-hi);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:6px 10px;outline:none;">
+            </div>
+            <div id="taxList" style="max-height:220px;overflow-y:auto;padding:0 4px 6px;"></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <label style="color:var(--dim);font-size:11px;">Tax applies to</label>
+          <span id="taxAppliesTo" style="font-size:11px;color:var(--muted);text-align:right;"></span>
+        </div>
+        <div id="taxNote" style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.5;border-left:2px solid var(--border-hi);padding-left:10px;"></div>
+      </div>
+      <div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;">Corporate income tax</span>
+            <span id="taxCitRate" style="font-size:18px;font-weight:500;color:var(--text);"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;">Effective rate (est.)</span>
+            <span id="taxEffRate" style="font-size:13px;color:var(--muted);"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+            <span style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;">VAT / GST (sales, not your cost)</span>
+            <span id="taxVat" style="font-size:13px;color:var(--muted);"></span>
+          </div>
+        </div>
+        <div style="margin-top:14px;background:var(--bg3);border-radius:var(--radius);padding:12px 14px;">
+          <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Estimated tax on dev net</div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:11px;color:var(--muted);">IP / Publisher share after tax</span>
+            <span id="taxIpNet" style="font-size:13px;font-weight:500;color:var(--blue);"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:11px;color:var(--muted);">Dev studio share after tax</span>
+            <span id="taxDevNet" style="font-size:13px;font-weight:500;color:var(--green);"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:10px;color:var(--dim);margin-top:12px;line-height:1.6;">⚠ Tax figures are simplified estimates for planning purposes only. Actual liability depends on deductible expenses, profit margins, local rules, transfer pricing, and your accountant's advice. VAT/GST on digital goods is typically collected and remitted by Steam (Valve) — it is not an additional cost to you.</p>
+  </div>
+
+  <!-- Regions + breakdown -->
+  <div class="grid">
+
+    <div class="panel">
+      <div class="panel-label">Units by region</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:11px;color:var(--dim);max-width:260px;">Edit any value manually, or recalculate all other regions from US/Canada.</p>
+        <button onclick="recalcFromUS()" style="background:var(--accent-dim);border:0.5px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;">&#8635; Recalc from US</button>
+      </div>
+      <div class="regions-grid" id="regionsGrid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">Breakdown</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Region</th>
+              <th>Price</th>
+              <th>Units</th>
+              <th>Gross</th>
+              <th>Dev net</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot id="tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p style="margin-bottom:16px;"><strong style="color:var(--muted);">Disclaimer:</strong> Unit sales projections are illustrative estimates based on approximate Steam market share ratios. They are not predictions and will vary significantly by genre, localization, marketing, and timing. Tax figures are simplified estimates — actual liability depends on expenses, profit margins, and local rules. This tool is for planning purposes only.</p>
+
+    <div style="border-top:0.5px solid var(--border);padding-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px 32px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;">Regional unit proportions</div>
+        <a href="https://www.gamediscover.co" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;margin-bottom:4px;">↗ GameDiscoverCo — Steam market geography data</a>
+        <a href="https://store.steampowered.com/charts" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;">↗ Steam Charts — top sellers by region</a>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;">Regional price differences</div>
+        <a href="https://partner.steamgames.com/doc/store/pricing/recommendations" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;margin-bottom:4px;">↗ Steamworks — official pricing recommendations</a>
+        <a href="https://www.steamdb.info/currencies/" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;">↗ SteamDB — currency & regional price tracker</a>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;">Corporate tax estimates</div>
+        <a href="https://taxsummaries.pwc.com" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;margin-bottom:4px;">↗ PwC Worldwide Tax Summaries</a>
+        <a href="https://www.oecd.org/tax/tax-policy/tax-database/" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;margin-bottom:4px;">↗ OECD Corporate Tax Statistics</a>
+        <a href="https://taxfoundation.org/data/all/global/corporate-tax-rates-by-country/" target="_blank" rel="noopener" style="display:block;color:var(--muted);font-size:12px;text-decoration:none;">↗ Tax Foundation — global corporate tax rates</a>
+      </div>
+    </div>
+    <div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:11px;color:var(--dim);">Built with <a href="https://claude.ai" target="_blank" rel="noopener" style="color:var(--dim);text-decoration:underline;text-underline-offset:3px;">Claude</a> by Anthropic — figures are estimates only, not financial or legal advice.</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+const REGIONS = [
+  { key:'us',   name:'US / Canada',       pct:1.00 },
+  { key:'eu',   name:'W. Europe (EUR)',    pct:1.00 },
+  { key:'gb',   name:'UK (GBP)',           pct:1.00 },
+  { key:'au',   name:'Australia',          pct:0.90 },
+  { key:'cn',   name:'China',              pct:0.63 },
+  { key:'br',   name:'Brazil',             pct:0.45 },
+  { key:'ru',   name:'CIS / Russia',       pct:0.50 },
+  { key:'la',   name:'Latin America',      pct:0.35 },
+  { key:'sea',  name:'SE Asia',            pct:0.40 },
+  { key:'pl',   name:'Poland',             pct:0.65 },
+  { key:'in',   name:'India',              pct:0.30 },
+  { key:'mena', name:'MENA',               pct:0.50 },
+];
+const REGION_RATIOS = { us:1.000, eu:0.750, gb:0.300, au:0.150, cn:0.375, br:0.200, ru:0.150, la:0.100, sea:0.200, pl:0.100, in:0.125, mena:0.075 };
+const DEFAULT_US = 1000;
+const DEFAULT_UNITS = Object.fromEntries(Object.entries(REGION_RATIOS).map(([k,v]) => [k, Math.round(DEFAULT_US * v)]));
+
+const TAX_COUNTRIES = [
+  { name:'— Select country —', flag:'', cit:null, eff:null, vat:null, appliesTo:'', note:'' },
+  // Europe
+  { name:'Albania', flag:'🇦🇱', cit:15, eff:14, vat:20, appliesTo:'Corporate profits', note:'15% flat rate. Small market with growing tech sector.' },
+  { name:'Austria', flag:'🇦🇹', cit:23, eff:21, vat:20, appliesTo:'Corporate profits', note:'Rate reduced from 25% to 23% in 2024. R&D premium of 14% on qualifying expenditure.' },
+  { name:'Belgium', flag:'🇧🇪', cit:25, eff:20, vat:21, appliesTo:'Corporate profits', note:'Innovation Income Deduction allows 85% deduction on qualifying IP income — effective rate on IP revenue as low as 3.75%.' },
+  { name:'Bosnia & Herzegovina', flag:'🇧🇦', cit:10, eff:10, vat:17, appliesTo:'Corporate profits', note:'10% flat rate, one of the lowest in Europe. Developing business environment.' },
+  { name:'Bulgaria', flag:'🇧🇬', cit:10, eff:9, vat:20, appliesTo:'Corporate profits', note:'10% flat rate, one of the lowest in the EU. Low cost base for dev studios.' },
+  { name:'Croatia', flag:'🇭🇷', cit:18, eff:16, vat:25, appliesTo:'Corporate profits', note:'10% reduced rate for small companies (revenue under HRK 7.5M). EU member since 2013.' },
+  { name:'Cyprus', flag:'🇨🇾', cit:12.5, eff:2.5, vat:19, appliesTo:'Corporate profits', note:'IP Box regime offers 80% exemption on qualifying IP income — effective rate as low as 2.5% on game revenue. Popular for IP holding companies.' },
+  { name:'Czech Republic', flag:'🇨🇿', cit:21, eff:20, vat:21, appliesTo:'Corporate profits', note:'21% rate since 2024. R&D super-deduction of 110–200% available. Growing game dev scene.' },
+  { name:'Denmark', flag:'🇩🇰', cit:22, eff:21, vat:25, appliesTo:'Corporate profits', note:'22% flat rate. Participation exemption on dividends and capital gains from subsidiary shares.' },
+  { name:'Estonia', flag:'🇪🇪', cit:0, eff:0, vat:22, appliesTo:'Distributed profits only (0% on retained earnings)', note:'Unique system: profits taxed only when distributed as dividends. Undistributed reinvested profits are not taxed — very attractive for indie studios.' },
+  { name:'Finland', flag:'🇫🇮', cit:20, eff:19, vat:25.5, appliesTo:'Corporate profits', note:'20% flat rate. R&D incentive scheme with 50% additional deduction on qualifying expenses (introduced 2023).' },
+  { name:'France', flag:'🇫🇷', cit:25, eff:25, vat:20, appliesTo:'Corporate profits', note:'Standard 25% rate. Generous Video Game Tax Credit (Crédit d\'impôt jeu vidéo) offsets 30% of eligible development costs.' },
+  { name:'Germany', flag:'🇩🇪', cit:15, eff:30, vat:19, appliesTo:'Corporate profits (+ trade tax)', note:'Federal CIT 15%, but local trade tax (Gewerbesteuer) adds ~14–17%, bringing combined rate to ~29–33% depending on municipality.' },
+  { name:'Greece', flag:'🇬🇷', cit:22, eff:21, vat:24, appliesTo:'Corporate profits', note:'22% standard rate. Various investment incentives available for tech companies.' },
+  { name:'Hungary', flag:'🇭🇺', cit:9, eff:9, vat:27, appliesTo:'Corporate profits', note:'Lowest CIT in the EU at 9%. However, highest VAT in the world at 27%.' },
+  { name:'Iceland', flag:'🇮🇸', cit:20, eff:19, vat:24, appliesTo:'Corporate profits', note:'20% flat rate. Strong IP protection framework.' },
+  { name:'Ireland', flag:'🇮🇪', cit:12.5, eff:10, vat:23, appliesTo:'Corporate profits', note:'12.5% rate on trading income. Extensive tax treaties; popular EU tech hub. R&D credits reduce effective rate further.' },
+  { name:'Italy', flag:'🇮🇹', cit:24, eff:27, vat:22, appliesTo:'Corporate profits (+ IRAP)', note:'24% IRES + 3.9% IRAP regional tax applied even without profit. Patent Box regime available for IP income.' },
+  { name:'Latvia', flag:'🇱🇻', cit:0, eff:0, vat:21, appliesTo:'Distributed profits only', note:'Similar to Estonia: 0% on retained earnings, 20% on distributed profits. Good for reinvesting studio revenue.' },
+  { name:'Lithuania', flag:'🇱🇹', cit:15, eff:13, vat:21, appliesTo:'Corporate profits', note:'15% standard; 5% reduced rate for small companies. Growing Baltic tech scene.' },
+  { name:'Luxembourg', flag:'🇱🇺', cit:17, eff:24, vat:17, appliesTo:'Corporate profits (+ municipal)', note:'17% CIT but municipal business tax adds ~7%. IP regime provides 80% exemption on qualifying IP income. Lowest VAT in EU.' },
+  { name:'Malta', flag:'🇲🇹', cit:35, eff:5, vat:18, appliesTo:'Corporate profits (refund system)', note:'Nominal 35%, but full imputation system with shareholder refunds gives effective ~5% for non-residents. Popular for IP holding.' },
+  { name:'Montenegro', flag:'🇲🇪', cit:9, eff:9, vat:21, appliesTo:'Corporate profits', note:'9% flat rate — one of the lowest in Europe. EU candidate country.' },
+  { name:'Netherlands', flag:'🇳🇱', cit:19, eff:17, vat:21, appliesTo:'Corporate profits', note:'19% on first €200k, 25.8% above. Innovation Box regime can lower effective rate to ~9% on IP-related income.' },
+  { name:'Norway', flag:'🇳🇴', cit:22, eff:21, vat:25, appliesTo:'Corporate profits', note:'22% flat rate. Generous SkatteFUNN R&D tax credit of 19–20% of qualifying costs.' },
+  { name:'Poland', flag:'🇵🇱', cit:19, eff:16, vat:23, appliesTo:'Corporate profits', note:'19% standard; 9% for small taxpayers (revenue below €2M). Game Tax Relief offers 50% deduction on qualifying development costs.' },
+  { name:'Portugal', flag:'🇵🇹', cit:21, eff:19, vat:23, appliesTo:'Corporate profits', note:'21% standard; 17% for SMEs on first €50k. SIFIDE II R&D tax credit up to 82.5% on incremental R&D spend.' },
+  { name:'Romania', flag:'🇷🇴', cit:16, eff:15, vat:19, appliesTo:'Corporate profits', note:'16% standard rate; 1% micro-enterprise tax on revenue (for companies under €500k). Growing IT sector with salary tax exemptions for developers.' },
+  { name:'Serbia', flag:'🇷🇸', cit:15, eff:14, vat:20, appliesTo:'Corporate profits', note:'15% flat rate. IP Box regime offers 80% deduction on qualifying IP income. Developer salaries eligible for tax incentives.' },
+  { name:'Slovakia', flag:'🇸🇰', cit:21, eff:19, vat:20, appliesTo:'Corporate profits', note:'21% standard rate; 15% for small companies. R&D super-deduction of 200% available.' },
+  { name:'Slovenia', flag:'🇸🇮', cit:19, eff:17, vat:22, appliesTo:'Corporate profits', note:'19% flat rate. R&D tax relief of 100% available on qualifying expenses.' },
+  { name:'Spain', flag:'🇪🇸', cit:25, eff:23, vat:21, appliesTo:'Corporate profits', note:'25% standard rate. R&D deductions up to 25–42%. Beckham Law for foreign employees. Canary Islands offer 4% rate.' },
+  { name:'Sweden', flag:'🇸🇪', cit:20.6, eff:19, vat:25, appliesTo:'Corporate profits', note:'20.6% flat rate. No capital gains tax on shares held for business purposes (näringsbetingade andelar).' },
+  { name:'Switzerland', flag:'🇨🇭', cit:8.5, eff:19, vat:8.1, appliesTo:'Corporate profits (federal + cantonal)', note:'Federal rate 8.5%; combined with cantonal/communal taxes reaches ~12–21% depending on canton. Zug and Nidwalden are popular for low rates.' },
+  { name:'Ukraine', flag:'🇺🇦', cit:18, eff:17, vat:20, appliesTo:'Corporate profits', note:'18% standard rate. Diia City special regime: 9% CIT or 5% withholding on distributed profits for qualifying IT companies.' },
+  { name:'United Kingdom', flag:'🇬🇧', cit:25, eff:22, vat:20, appliesTo:'Corporate profits', note:'25% main rate (19% for profits under £50k). Video Games Tax Relief (VGTR) offers up to 25% of qualifying UK core costs.' },
+  // Americas
+  { name:'Argentina', flag:'🇦🇷', cit:35, eff:33, vat:21, appliesTo:'Corporate profits', note:'35% rate. Complex tax environment with additional levies. Currency controls complicate international transactions.' },
+  { name:'Brazil', flag:'🇧🇷', cit:15, eff:34, vat:null, appliesTo:'Corporate profits (+ CSLL + surcharge)', note:'15% IRPJ + 10% surcharge on profits above R$240k + 9% CSLL = ~34% effective. Complex system with PIS/COFINS on revenue.' },
+  { name:'Canada', flag:'🇨🇦', cit:15, eff:26, vat:5, appliesTo:'Corporate profits (federal + provincial)', note:'15% federal + ~10% provincial = ~26% combined. SR&ED tax credit (15–35%) for R&D. Quebec offers 37.5% refundable tax credit for game development.' },
+  { name:'Chile', flag:'🇨🇱', cit:27, eff:25, vat:19, appliesTo:'Corporate profits', note:'27% rate. Stable business environment; growing tech sector.' },
+  { name:'Colombia', flag:'🇨🇴', cit:35, eff:32, vat:19, appliesTo:'Corporate profits', note:'35% standard rate. Various free trade zones offer reduced rates.' },
+  { name:'Mexico', flag:'🇲🇽', cit:30, eff:28, vat:16, appliesTo:'Corporate profits', note:'30% flat rate. IMMEX program and free trade zone benefits available for qualifying businesses.' },
+  { name:'United States', flag:'🇺🇸', cit:21, eff:27, vat:null, appliesTo:'Corporate profits (federal + state)', note:'21% federal; combined with state taxes reaches ~27% average. No federal VAT; state sales tax varies (0–10%). Section 199A deduction available for pass-throughs.' },
+  { name:'Uruguay', flag:'🇺🇾', cit:25, eff:23, vat:22, appliesTo:'Corporate profits', note:'25% standard rate. Free trade zones offer 0% CIT for qualifying companies. Territorial tax system.' },
+  // Asia-Pacific
+  { name:'Australia', flag:'🇦🇺', cit:30, eff:27, vat:10, appliesTo:'Corporate profits', note:'30% standard; 25% for small business (turnover under AUD 50M). R&D Tax Incentive: 43.5% refundable offset for eligible companies.' },
+  { name:'China', flag:'🇨🇳', cit:25, eff:23, vat:13, appliesTo:'Corporate profits', note:'25% standard; 15% for High-Tech Enterprise status (common for game companies). VAT 6% for services, 13% for goods.' },
+  { name:'Hong Kong', flag:'🇭🇰', cit:16.5, eff:14, vat:null, appliesTo:'Corporate profits', note:'16.5% standard; 8.25% on first HKD 2M. No VAT/GST. Territorial tax system — offshore income may be exempt.' },
+  { name:'India', flag:'🇮🇳', cit:22, eff:25, vat:18, appliesTo:'Corporate profits (+ surcharges)', note:'22% base + surcharges = ~25%. New manufacturing companies: 15%. GST 18% on digital services.' },
+  { name:'Indonesia', flag:'🇮🇩', cit:22, eff:21, vat:11, appliesTo:'Corporate profits', note:'22% standard rate. Listed companies get 3% discount. Large gaming market.' },
+  { name:'Japan', flag:'🇯🇵', cit:23.2, eff:30, vat:10, appliesTo:'Corporate profits (+ local taxes)', note:'23.2% national CIT + local taxes = ~30–34% combined. 10% consumption tax. One of the world\'s largest game markets.' },
+  { name:'Malaysia', flag:'🇲🇾', cit:24, eff:22, vat:8, appliesTo:'Corporate profits', note:'24% standard; 17% for SMEs on first MYR 600k. Multimedia Super Corridor (MSC) status offers tax exemptions for qualifying digital companies.' },
+  { name:'New Zealand', flag:'🇳🇿', cit:28, eff:26, vat:15, appliesTo:'Corporate profits', note:'28% flat rate. No capital gains tax in most cases. Screen Production Grant available for qualifying projects.' },
+  { name:'Philippines', flag:'🇵🇭', cit:25, eff:23, vat:12, appliesTo:'Corporate profits', note:'25% standard; 20% for small businesses. PEZA economic zone companies may qualify for 5% preferential rate.' },
+  { name:'Singapore', flag:'🇸🇬', cit:17, eff:14, vat:9, appliesTo:'Corporate profits', note:'17% headline; effective rate lower with startup exemptions (75% on first SGD 100k for 3 years). No capital gains tax. Major Asian game dev hub.' },
+  { name:'South Korea', flag:'🇰🇷', cit:24, eff:23, vat:10, appliesTo:'Corporate profits', note:'24% on income over KRW 20B; lower brackets for smaller companies. R&D tax credits up to 40% for SMEs. Thriving game industry.' },
+  { name:'Taiwan', flag:'🇹🇼', cit:20, eff:19, vat:5, appliesTo:'Corporate profits', note:'20% flat rate. One of the lowest VAT rates in Asia at 5%. Strong IP protection.' },
+  { name:'Thailand', flag:'🇹🇭', cit:20, eff:19, vat:7, appliesTo:'Corporate profits', note:'20% standard rate; 15% for listed companies. BOI promotion can reduce rate to 0% for qualifying digital businesses.' },
+  { name:'Vietnam', flag:'🇻🇳', cit:20, eff:19, vat:10, appliesTo:'Corporate profits', note:'20% standard; 10% for certain hi-tech companies in designated zones. Growing game dev market.' },
+  // Middle East & Africa
+  { name:'Israel', flag:'🇮🇱', cit:23, eff:20, vat:17, appliesTo:'Corporate profits', note:'23% standard. Preferred Enterprise status reduces rate to 7.5–16% depending on location. Strong tech ecosystem.' },
+  { name:'Saudi Arabia', flag:'🇸🇦', cit:20, eff:19, vat:15, appliesTo:'Corporate profits (foreign)', note:'20% for foreign companies; 0% for Saudi/GCC nationals. VAT raised to 15% in 2020. NEOM and special zones may offer incentives.' },
+  { name:'South Africa', flag:'🇿🇦', cit:27, eff:25, vat:15, appliesTo:'Corporate profits', note:'27% rate (reduced from 28% in 2023). SBC small business corporation regime offers graduated rates.' },
+  { name:'UAE', flag:'🇦🇪', cit:9, eff:9, vat:5, appliesTo:'Corporate profits (above AED 375k threshold)', note:'9% introduced June 2023 on profits above AED 375k (~$100k). Free zone companies may qualify for 0% rate. Very low VAT at 5%.' },
+];
+
+// --- Searchable dropdown ---
+let taxSelectedIdx = 0;
+
+function buildTaxDropdown() {
+  renderTaxList('');
+  onTaxSelect(0);
+  document.addEventListener('click', e => {
+    if (!document.getElementById('taxDropdownWrap').contains(e.target)) closeTaxDropdown();
+  });
+}
+
+function renderTaxList(query) {
+  const list = document.getElementById('taxList');
+  const q = query.toLowerCase();
+  list.innerHTML = '';
+  TAX_COUNTRIES.forEach((c, i) => {
+    if (i === 0 && q) return; // hide placeholder when searching
+    const label = c.flag ? c.flag + ' ' + c.name : c.name;
+    if (q && !c.name.toLowerCase().includes(q)) return;
+    const div = document.createElement('div');
+    div.textContent = label;
+    div.style.cssText = `padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:${i === taxSelectedIdx ? 'var(--accent)' : 'var(--text)'};background:${i === taxSelectedIdx ? 'var(--accent-dim)' : 'transparent'};`;
+    div.onmouseenter = () => div.style.background = 'var(--bg3)';
+    div.onmouseleave = () => div.style.background = i === taxSelectedIdx ? 'var(--accent-dim)' : 'transparent';
+    div.onclick = () => { onTaxSelect(i); closeTaxDropdown(); };
+    list.appendChild(div);
+  });
+}
+
+function toggleTaxDropdown() {
+  const dd = document.getElementById('taxDropdown');
+  const open = dd.style.display !== 'none';
+  if (open) { closeTaxDropdown(); } else {
+    dd.style.display = 'block';
+    document.getElementById('taxChevron').style.transform = 'rotate(180deg)';
+    document.getElementById('taxSearch').value = '';
+    renderTaxList('');
+    setTimeout(() => document.getElementById('taxSearch').focus(), 50);
+  }
+}
+
+function closeTaxDropdown() {
+  document.getElementById('taxDropdown').style.display = 'none';
+  document.getElementById('taxChevron').style.transform = 'rotate(0deg)';
+}
+
+function filterTax() {
+  renderTaxList(document.getElementById('taxSearch').value);
+}
+
+function onTaxSelect(idx) {
+  taxSelectedIdx = idx;
+  const c = TAX_COUNTRIES[idx];
+  const label = c.flag ? c.flag + ' ' + c.name : c.name;
+  document.getElementById('taxSelectedLabel').textContent = label;
+  document.getElementById('taxAppliesTo').textContent = c.appliesTo || '—';
+  document.getElementById('taxNote').textContent = c.note || '';
+  document.getElementById('taxCitRate').textContent = c.cit !== null ? c.cit + '%' : '—';
+  document.getElementById('taxEffRate').textContent = c.eff !== null ? '~' + c.eff + '%' : '—';
+  document.getElementById('taxVat').textContent = c.vat !== null ? c.vat + '%' : '—';
+  calc();
+}
+
+function onTaxChange() { onTaxSelect(taxSelectedIdx); }
+
+function getTaxRate() {
+  const c = TAX_COUNTRIES[taxSelectedIdx];
+  return c.eff !== null ? c.eff / 100 : 0;
+}
+
+
+function buildRegions() {
+  const g = document.getElementById('regionsGrid');
+  g.innerHTML = '';
+  REGIONS.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'region-row';
+    div.innerHTML = `
+      <span class="region-name">${r.name}</span>
+      <span class="region-pct">${Math.round(r.pct * 100)}%</span>
+      <input type="number" id="u_${r.key}" value="${DEFAULT_UNITS[r.key] || 50}" min="0" step="10" oninput="calc()">
+    `;
+    g.appendChild(div);
+  });
+}
+
+function recalcFromUS() {
+  const usUnits = parseInt(document.getElementById('u_us')?.value) || DEFAULT_US;
+  REGIONS.forEach(r => {
+    if (r.key === 'us') return;
+    const el = document.getElementById('u_' + r.key);
+    if (el) el.value = Math.round(usUnits * REGION_RATIOS[r.key]);
+  });
+  calc();
+}
+
+function updateRangeGradient(el) {
+  const min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+  const pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+  el.style.background = `linear-gradient(to right, var(--accent) ${pct}, var(--bg3) ${pct})`;
+}
+
+function syncSplits(changed) {
+  const ipEl = document.getElementById('ipSplit');
+  const devEl = document.getElementById('devSplit');
+  let ip = parseInt(ipEl.value);
+  let dev = parseInt(devEl.value);
+  if (changed === 'ip') { dev = Math.max(0, Math.min(100, 100 - ip)); devEl.value = dev; }
+  else { ip = Math.max(0, Math.min(100, 100 - dev)); ipEl.value = ip; }
+  document.getElementById('ipVal').textContent = ip + '%';
+  document.getElementById('devVal').textContent = dev + '%';
+  document.getElementById('barIp').style.width = ip + '%';
+  document.getElementById('barDev').style.width = dev + '%';
+  document.getElementById('splitWarn').style.display = (ip + dev) !== 100 ? '' : 'none';
+  updateRangeGradient(ipEl);
+  updateRangeGradient(devEl);
+  calc();
+}
+
+function fmt(n) {
+  if (n >= 1000000) return '$' + (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return '$' + Math.round(n).toLocaleString('en-US');
+  return '$' + n.toFixed(2);
+}
+function fmtP(n) { return '$' + n.toFixed(2); }
+
+function calc() {
+  const steamEl = document.getElementById('steamCut');
+  updateRangeGradient(steamEl);
+
+  const base = parseFloat(document.getElementById('basePrice').value) || 10;
+  const steamPct = parseInt(steamEl.value) / 100;
+  const ipPct = parseInt(document.getElementById('ipSplit').value) / 100;
+  const devPct = parseInt(document.getElementById('devSplit').value) / 100;
+  document.getElementById('steamCutVal').textContent = Math.round(steamPct * 100) + '%';
+
+  let totalGross = 0, totalDevNet = 0, totalUnits = 0;
+  const rows = [];
+
+  REGIONS.forEach(r => {
+    const units = parseInt(document.getElementById('u_' + r.key)?.value) || 0;
+    const price = base * r.pct;
+    const gross = price * units;
+    const devNet = gross * (1 - steamPct);
+    totalGross += gross;
+    totalDevNet += devNet;
+    totalUnits += units;
+    rows.push({ name: r.name, price, units, gross, devNet });
+  });
+
+  const steamTake = totalGross - totalDevNet;
+  const ipShare = totalDevNet * ipPct;
+  const devShare = totalDevNet * devPct;
+  const taxRate = getTaxRate();
+  const ipAfterTax = ipShare * (1 - taxRate);
+  const devAfterTax = devShare * (1 - taxRate);
+
+  document.getElementById('taxIpNet').textContent = taxRate > 0 ? fmt(ipAfterTax) : '—';
+  document.getElementById('taxDevNet').textContent = taxRate > 0 ? fmt(devAfterTax) : '—';
+
+  const hasTax = taxRate > 0;
+  document.getElementById('metrics').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+      <div class="metric">
+        <div class="metric-label">Total units sold</div>
+        <div class="metric-val">${totalUnits.toLocaleString()}</div>
+        <div class="metric-sub">across all regions</div>
+      </div>
+      <div class="metric accent-border">
+        <div class="metric-label">Total gross</div>
+        <div class="metric-val accent">${fmt(totalGross)}</div>
+        <div class="metric-sub">all regions combined</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Steam (${Math.round(steamPct*100)}% cut)</div>
+        <div class="metric-val muted">${fmt(steamTake)}</div>
+        <div class="metric-sub">platform fee</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+      <div class="metric">
+        <div class="metric-label">Total dev net</div>
+        <div class="metric-val">${fmt(totalDevNet)}</div>
+        <div class="metric-sub">after Steam cut</div>
+      </div>
+      <div class="metric blue-border">
+        <div class="metric-label">IP / Publisher</div>
+        <div class="metric-val blue">${fmt(hasTax ? ipAfterTax : ipShare)}</div>
+        <div class="metric-sub">${hasTax ? 'after tax (~' + Math.round(taxRate*100) + '%)' : Math.round(ipPct*100) + '% of dev net'}</div>
+      </div>
+      <div class="metric green-border">
+        <div class="metric-label">Dev studio</div>
+        <div class="metric-val green">${fmt(hasTax ? devAfterTax : devShare)}</div>
+        <div class="metric-sub">${hasTax ? 'after tax (~' + Math.round(taxRate*100) + '%)' : Math.round(devPct*100) + '% of dev net'}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('tbody').innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td class="muted">${fmtP(r.price)}</td>
+      <td class="muted">${r.units.toLocaleString()}</td>
+      <td>${fmt(r.gross)}</td>
+      <td>${fmt(r.devNet)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('tfoot').innerHTML = `
+    <tr>
+      <td>Total</td>
+      <td class="muted">—</td>
+      <td class="muted">${totalUnits.toLocaleString()}</td>
+      <td class="accent">${fmt(totalGross)}</td>
+      <td>${fmt(totalDevNet)}</td>
+    </tr>
+  `;
+}
+
+buildRegions();
+buildTaxDropdown();
+calc();
+
+// Init range gradients
+['steamCut','ipSplit','devSplit'].forEach(id => updateRangeGradient(document.getElementById(id)));
+</script>
+</body>
+</html>
